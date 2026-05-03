@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TexTool – Word & Character Counter</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #17171f;
+    --surface2: #1e1e2a;
+    --border: #2a2a3a;
+    --accent: #00e5ff;
+    --accent2: #ff4fd8;
+    --text: #e8e8f0;
+    --text-muted: #7a7a9a;
+    --chunk-bg: #12121a;
+    --chunk-border: #2a2a3a;
+    --success: #00ffb3;
+    --warning: #ffcc00;
+  }
+  .light {
+    --bg: #f0f0f5;
+    --surface: #ffffff;
+    --surface2: #e8e8f0;
+    --border: #d0d0e0;
+    --accent: #0066cc;
+    --accent2: #cc00aa;
+    --text: #111118;
+    --text-muted: #666688;
+    --chunk-bg: #f8f8fc;
+    --chunk-border: #d0d0e0;
+    --success: #00aa77;
+    --warning: #aa8800;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Header */
+  .header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+
+  /* Stats Bar */
+  .stats-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .stat-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+  }
+  .stat-pill .label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-pill .value { color: var(--accent); font-weight: 700; font-size: 13px; }
+
+  /* Toolbar */
+  .toolbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--border); border-color: var(--accent); color: var(--accent); }
+  .btn:active { transform: scale(0.96); }
+  .btn.accent { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn.accent:hover { opacity: 0.85; color: #000; }
+  .btn.danger { border-color: #ff4444; }
+  .btn.danger:hover { background: #ff4444; color: white; border-color: #ff4444; }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    margin: 0 2px;
+  }
+
+  /* Divide Section */
+  .divide-row {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    padding: 8px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .divide-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 10px;
+  }
+  .divide-group label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .divide-group label span { color: var(--accent2); }
+  .divide-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 80px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .divide-input:focus { border-color: var(--accent); }
+
+  /* Find & Replace */
+  .find-replace-panel {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 16px;
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .find-replace-panel.open { display: flex; }
+  .find-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 150px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .find-input:focus { border-color: var(--accent); }
+  .find-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+  /* Main Area */
+  .main {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    min-height: 400px;
+  }
+
+  .textarea-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #mainText {
+    width: 100%;
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    border: none;
+    outline: none;
+    padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    resize: vertical;
+    min-height: 420px;
+    height: 480px;
+    transition: background 0.3s, color 0.3s;
+  }
+  #mainText::placeholder { color: var(--text-muted); }
+
+  /* Chunks Area */
+  .chunks-area {
+    background: var(--bg);
+    border-top: 2px solid var(--border);
+  }
+  .chunks-header {
+    padding: 12px 20px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .chunks-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .chunks-title span { color: var(--accent); }
+
+  .chunk-card {
+    margin: 0 16px 12px;
+    background: var(--chunk-bg);
+    border: 1px solid var(--chunk-border);
+    border-radius: 10px;
+    overflow: hidden;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .chunk-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--chunk-border);
+  }
+  .chunk-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chunk-meta {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .chunk-copy-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    transition: all 0.15s;
+  }
+  .chunk-copy-btn:hover { opacity: 0.8; }
+  .chunk-copy-btn.copied { background: var(--success); }
+  .chunk-text {
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  /* Dark/Light toggle */
+  .toggle-theme {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .toggle-theme:hover { border-color: var(--accent); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--accent);
+    color: #000;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    z-index: 999;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  .highlight-match { background: var(--warning); color: #000; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">Tex<span>Tool</span></div>
+  <button class="toggle-theme" id="themeBtn" onclick="toggleTheme()" title="Toggle Dark/Light">🌙</button>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="stat-pill">
+    <span class="label">Chars</span>
+    <span class="value" id="charCount">0</span>
+  </div>
+  <div class="stat-pill">
+    <span class="label">No Space</span>
+    <span class="value" id="charNoSpace">0</span>
+  </div>
+  <div class="stat-pill">
+    <span class="label">Words</span>
+    <span class="value" id="wordCount">0</span>
+  </div>
+  <div class="stat-pill">
+    <span class="label">Lines</span>
+    <span class="value" id="lineCount">0</span>
+  </div>
+  <div class="stat-pill">
+    <span class="label">Paragraphs</span>
+    <span class="value" id="paraCount">0</span>
+  </div>
+  <div class="stat-pill">
+    <span class="label">Read Time</span>
+    <span class="value" id="readTime">0 min</span>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <button class="btn" onclick="copyText()">📋 Copy</button>
+  <button class="btn" onclick="pasteText()">📥 Paste</button>
+  <button class="btn danger" onclick="deleteText()">🗑 Delete</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn" onclick="convertCase('upper')">⬆ UPPER</button>
+  <button class="btn" onclick="convertCase('lower')">⬇ lower</button>
+  <button class="btn" onclick="convertCase('title')">Aa Title</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn" onclick="undoText()">↩ Undo</button>
+  <button class="btn" onclick="redoText()">↪ Redo</button>
+  <div class="toolbar-divider"></div>
+  <button class="btn" onclick="toggleFindReplace()">🔍 Find & Replace</button>
+</div>
+
+<!-- Divide Row -->
+<div class="divide-row">
+  <div class="divide-group">
+    <label>✂ <span>Word</span> Divide</label>
+    <input class="divide-input" type="number" id="wordDivideNum" placeholder="e.g. 500" min="1">
+    <button class="btn accent" onclick="divideByWords()">Split</button>
+  </div>
+  <div class="divide-group">
+    <label>✂ <span>Char</span> Divide</label>
+    <input class="divide-input" type="number" id="charDivideNum" placeholder="e.g. 3000" min="1">
+    <button class="btn accent" onclick="divideByChars()">Split</button>
+  </div>
+  <button class="btn" onclick="clearChunks()" style="margin-left:auto;">✕ Clear Chunks</button>
+</div>
+
+<!-- Find & Replace Panel -->
+<div class="find-replace-panel" id="findReplacePanel">
+  <span class="find-label">Find:</span>
+  <input class="find-input" type="text" id="findInput" placeholder="Search text...">
+  <span class="find-label">Replace:</span>
+  <input class="find-input" type="text" id="replaceInput" placeholder="Replace with...">
+  <button class="btn" onclick="findText()">Find</button>
+  <button class="btn accent" onclick="replaceText()">Replace All</button>
+  <button class="btn" onclick="closeFindReplace()">✕</button>
+</div>
+
+<!-- Main Area -->
+<div class="main">
+  <div class="textarea-wrapper">
+    <textarea id="mainText" placeholder="Yahan apna text paste karein ya likhein...&#10;&#10;Real-time stats upar update honge.&#10;Divide karne ke liye neeche number enter karein."></textarea>
+  </div>
+
+  <!-- Chunks Area -->
+  <div class="chunks-area" id="chunksArea" style="display:none;">
+    <div class="chunks-header">
+      <span class="chunks-title">Chunks — <span id="chunkCount">0</span> parts</span>
+      <span id="chunkTypeLabel" style="font-size:11px; color:var(--text-muted);"></span>
+    </div>
+    <div id="chunksList"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const textarea = document.getElementById('mainText');
+  let history = [''];
+  let historyIndex = 0;
+  let isTyping = false;
+
+  // Stats update
+  textarea.addEventListener('input', () => {
+    updateStats();
+    pushHistory();
+  });
+
+  function updateStats() {
+    const text = textarea.value;
+    const chars = text.length;
+    const charsNoSpace = text.replace(/\s/g, '').length;
+    const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+    const lines = text === '' ? 0 : text.split('\n').length;
+    const paras = text.trim() === '' ? 0 : text.trim().split(/\n\s*\n/).filter(p => p.trim()).length || 1;
+    const readMin = Math.ceil(words / 200);
+
+    document.getElementById('charCount').textContent = chars;
+    document.getElementById('charNoSpace').textContent = charsNoSpace;
+    document.getElementById('wordCount').textContent = words;
+    document.getElementById('lineCount').textContent = lines;
+    document.getElementById('paraCount').textContent = paras;
+    document.getElementById('readTime').textContent = readMin + ' min';
+  }
+
+  // History
+  function pushHistory() {
+    const val = textarea.value;
+    if (history[historyIndex] === val) return;
+    history = history.slice(0, historyIndex + 1);
+    history.push(val);
+    historyIndex = history.length - 1;
+  }
+
+  function undoText() {
+    if (historyIndex > 0) {
+      historyIndex--;
+      textarea.value = history[historyIndex];
+      updateStats();
+    }
+  }
+
+  function redoText() {
+    if (historyIndex < history.length - 1) {
+      historyIndex++;
+      textarea.value = history[historyIndex];
+      updateStats();
+    }
+  }
+
+  // Reliable copy function with fallback
+  function copyToClipboard(text, successMsg) {
+    // Method 1: Modern Clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(successMsg || '✅ Copied!');
+      }).catch(() => {
+        fallbackCopy(text, successMsg);
+      });
+    } else {
+      fallbackCopy(text, successMsg);
+    }
+  }
+
+  function fallbackCopy(text, successMsg) {
+    // Method 2: execCommand fallback (works everywhere)
+    const temp = document.createElement('textarea');
+    temp.value = text;
+    temp.style.position = 'fixed';
+    temp.style.top = '-9999px';
+    temp.style.left = '-9999px';
+    document.body.appendChild(temp);
+    temp.focus();
+    temp.select();
+    temp.setSelectionRange(0, text.length);
+    try {
+      document.execCommand('copy');
+      showToast(successMsg || '✅ Copied!');
+    } catch {
+      showToast('❌ Copy nahi hua, manually karein (Ctrl+A, Ctrl+C)');
+    }
+    document.body.removeChild(temp);
+  }
+
+  // Toolbar actions
+  function copyText() {
+    if (!textarea.value) return showToast('Kuch text nahi hai!');
+    copyToClipboard(textarea.value, '✅ Copied!');
+  }
+
+  function pasteText() {
+    // Show paste helper box
+    showPasteHelper();
+  }
+
+  function showPasteHelper() {
+    // Remove existing if any
+    const existing = document.getElementById('pasteHelper');
+    if (existing) existing.remove();
+
+    const helper = document.createElement('div');
+    helper.id = 'pasteHelper';
+    helper.style.cssText = `
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: var(--surface); border: 2px solid var(--accent);
+      border-radius: 12px; padding: 20px; z-index: 1000; width: 300px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    `;
+    helper.innerHTML = `
+      <div style="font-size:14px; font-weight:700; margin-bottom:10px; color:var(--accent);">📋 Text Paste Karein</div>
+      <textarea id="pasteArea" style="
+        width:100%; height:100px; background:var(--bg); color:var(--text);
+        border:1px solid var(--border); border-radius:6px; padding:8px;
+        font-family:'JetBrains Mono',monospace; font-size:12px; resize:none; outline:none;
+      " placeholder="Yahan Ctrl+V se paste karein..."></textarea>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button onclick="confirmPaste()" style="
+          flex:1; background:var(--accent); color:#000; border:none; padding:8px;
+          border-radius:6px; font-weight:700; cursor:pointer; font-size:13px;
+        ">✅ Add to Text</button>
+        <button onclick="document.getElementById('pasteHelper').remove()" style="
+          background:var(--surface2); color:var(--text); border:1px solid var(--border);
+          padding:8px 12px; border-radius:6px; font-weight:700; cursor:pointer; font-size:13px;
+        ">✕</button>
+      </div>
+    `;
+    document.body.appendChild(helper);
+    document.getElementById('pasteArea').focus();
+  }
+
+  function confirmPaste() {
+    const pasteArea = document.getElementById('pasteArea');
+    const text = pasteArea.value;
+    if (!text) return showToast('Kuch nahi mila paste karne ke liye!');
+    const pos = textarea.selectionStart || textarea.value.length;
+    const before = textarea.value.substring(0, pos);
+    const after = textarea.value.substring(pos);
+    textarea.value = before + text + after;
+    updateStats();
+    pushHistory();
+    document.getElementById('pasteHelper').remove();
+    showToast('✅ Pasted!');
+  }
+
+  function deleteText() {
+    if (!textarea.value) return;
+    textarea.value = '';
+    updateStats();
+    pushHistory();
+    clearChunks();
+    showToast('🗑 Deleted!');
+  }
+
+  function convertCase(type) {
+    const text = textarea.value;
+    if (!text) return showToast('Kuch text nahi hai!');
+    if (type === 'upper') textarea.value = text.toUpperCase();
+    else if (type === 'lower') textarea.value = text.toLowerCase();
+    else if (type === 'title') {
+      textarea.value = text.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    }
+    updateStats();
+    pushHistory();
+    showToast('✅ Case converted!');
+  }
+
+  // Theme
+  let isDark = true;
+  function toggleTheme() {
+    isDark = !isDark;
+    document.body.classList.toggle('light', !isDark);
+    document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+  }
+
+  // Find & Replace
+  function toggleFindReplace() {
+    document.getElementById('findReplacePanel').classList.toggle('open');
+  }
+  function closeFindReplace() {
+    document.getElementById('findReplacePanel').classList.remove('open');
+    document.getElementById('findInput').value = '';
+    document.getElementById('replaceInput').value = '';
+  }
+  function findText() {
+    const find = document.getElementById('findInput').value;
+    if (!find) return;
+    const text = textarea.value;
+    const idx = text.toLowerCase().indexOf(find.toLowerCase());
+    if (idx === -1) return showToast('Text nahi mila!');
+    textarea.focus();
+    textarea.setSelectionRange(idx, idx + find.length);
+    showToast(`✅ Mila: position ${idx}`);
+  }
+  function replaceText() {
+    const find = document.getElementById('findInput').value;
+    const replace = document.getElementById('replaceInput').value;
+    if (!find) return showToast('Find field khali hai!');
+    const regex = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const count = (textarea.value.match(regex) || []).length;
+    if (count === 0) return showToast('Text nahi mila!');
+    textarea.value = textarea.value.replace(regex, replace);
+    updateStats();
+    pushHistory();
+    showToast(`✅ ${count} jagah replace hua!`);
+  }
+
+  // SMART SPLIT - finds best cut point (sentence end > word end > char limit)
+  function smartCutPoint(text, limit) {
+    if (limit >= text.length) return text.length;
+    
+    // Look back from limit to find a sentence ending (. ! ? \n)
+    const searchFrom = Math.max(0, limit - 200);
+    const slice = text.substring(searchFrom, limit + 1);
+    
+    // Try to find last sentence boundary (. ! ? followed by space or newline)
+    const sentenceMatch = slice.match(/[.!?]\s+(?=[A-Z\n])/g);
+    if (sentenceMatch) {
+      // Find last occurrence position
+      let lastPos = -1;
+      let searchStr = text.substring(searchFrom, limit + 1);
+      const regex = /[.!?]\s+(?=[A-Z\n])/g;
+      let m;
+      while ((m = regex.exec(searchStr)) !== null) {
+        lastPos = searchFrom + m.index + m[0].length;
+      }
+      if (lastPos > searchFrom + 50) return lastPos;
+    }
+
+    // Try newline boundary
+    const newlineIdx = text.lastIndexOf('\n', limit);
+    if (newlineIdx > limit - 300 && newlineIdx > 0) return newlineIdx + 1;
+
+    // Fall back to word boundary (last space before limit)
+    const spaceIdx = text.lastIndexOf(' ', limit);
+    if (spaceIdx > limit - 100 && spaceIdx > 0) return spaceIdx + 1;
+
+    // Last resort: cut at limit
+    return limit;
+  }
+
+  // DIVIDE BY CHARACTERS - smart boundary aware
+  function divideByChars() {
+    const text = textarea.value;
+    if (!text.trim()) return showToast('Pehle text daalo!');
+    const num = parseInt(document.getElementById('charDivideNum').value);
+    if (!num || num < 1) return showToast('Sahi number daalo!');
+
+    const chunks = [];
+    let start = 0;
+    while (start < text.length) {
+      const remaining = text.length - start;
+      if (remaining <= num) {
+        chunks.push(text.substring(start));
+        break;
+      }
+      const cutAt = smartCutPoint(text, start + num);
+      chunks.push(text.substring(start, cutAt).trim());
+      start = cutAt;
+      // Skip leading whitespace
+      while (start < text.length && text[start] === ' ') start++;
+    }
+    renderChunks(chunks.filter(c => c.trim()), 'characters', num);
+  }
+
+  // DIVIDE BY WORDS - smart sentence boundary aware
+  function divideByWords() {
+    const text = textarea.value;
+    if (!text.trim()) return showToast('Pehle text daalo!');
+    const num = parseInt(document.getElementById('wordDivideNum').value);
+    if (!num || num < 1) return showToast('Sahi number daalo!');
+
+    // Split into words preserving whitespace
+    const tokens = text.split(/(\s+)/);
+    const chunks = [];
+    let current = '';
+    let wordCount = 0;
+    let lookingForSentenceEnd = false;
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const isWord = /\S/.test(token);
+
+      current += token;
+
+      if (isWord) {
+        wordCount++;
+        // Once we hit the limit, look for sentence end
+        if (wordCount >= num) lookingForSentenceEnd = true;
+      }
+
+      if (lookingForSentenceEnd && isWord) {
+        // Check if this word ends a sentence
+        const isSentenceEnd = /[.!?]['"]?$/.test(token) || token.endsWith('\n');
+        const isNewline = /\n/.test(token);
+        // Also cut at newline (paragraph break) if past limit
+        const comingNewline = i + 1 < tokens.length && /\n/.test(tokens[i + 1]);
+
+        if (isSentenceEnd || isNewline || comingNewline || wordCount >= num + 50) {
+          chunks.push(current.trim());
+          current = '';
+          wordCount = 0;
+          lookingForSentenceEnd = false;
+        }
+      }
+    }
+    if (current.trim()) chunks.push(current.trim());
+    renderChunks(chunks.filter(c => c.trim()), 'words', num);
+  }
+
+  function renderChunks(chunks, type, num) {
+    const area = document.getElementById('chunksArea');
+    const list = document.getElementById('chunksList');
+    area.style.display = 'block';
+    document.getElementById('chunkCount').textContent = chunks.length;
+    document.getElementById('chunkTypeLabel').textContent = `(${num} ${type} per chunk)`;
+    list.innerHTML = '';
+
+    chunks.forEach((chunk, i) => {
+      const wordC = chunk.trim() === '' ? 0 : chunk.trim().split(/\s+/).length;
+      const charC = chunk.length;
+
+      const card = document.createElement('div');
+      card.className = 'chunk-card';
+      card.innerHTML = `
+        <div class="chunk-header">
+          <div class="chunk-label">
+            CHUNK ${i + 1}
+            <span class="chunk-meta">${charC} chars · ${wordC} words</span>
+          </div>
+          <button class="chunk-copy-btn" onclick="copyChunk(this, ${i})">Copy</button>
+        </div>
+        <div class="chunk-text" id="chunk-text-${i}">${escapeHtml(chunk)}</div>
+      `;
+      list.appendChild(card);
+    });
+
+    // Store chunks globally
+    window._chunks = chunks;
+    showToast(`✅ ${chunks.length} chunks bane!`);
+
+    // Scroll to chunks
+    area.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function copyChunk(btn, index) {
+    const text = window._chunks[index];
+    const doSuccess = () => {
+      btn.textContent = '✅ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    };
+    // Fallback copy using execCommand
+    const temp = document.createElement('textarea');
+    temp.value = text;
+    temp.style.cssText = 'position:fixed;top:-9999px;left:-9999px;';
+    document.body.appendChild(temp);
+    temp.focus(); temp.select(); temp.setSelectionRange(0, text.length);
+    try { document.execCommand('copy'); doSuccess(); } 
+    catch { showToast('❌ Copy nahi hua, manually karein'); }
+    document.body.removeChild(temp);
+  }
+
+  function clearChunks() {
+    document.getElementById('chunksArea').style.display = 'none';
+    document.getElementById('chunksList').innerHTML = '';
+    window._chunks = [];
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  // Init
+  updateStats();
+</script>
+</body>
+</html>
